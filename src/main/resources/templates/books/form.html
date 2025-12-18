@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Форма</title>
+</head>
+<body>
+
+<h1 th:text="${pageTitle}">Форма</h1>
+
+<form th:action="@{${formAction}}" method="post" th:object="${bookForm}">
+    <div>
+        <label>Название</label>
+        <input type="text" th:field="*{title}">
+        <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+    </div>
+
+    <div>
+        <label>Год</label>
+        <input type="number" th:field="*{publishedYear}">
+    </div>
+
+    <div>
+        <label>Автор</label>
+        <select th:field="*{authorId}">
+            <option th:value="${null}">— без автора —</option>
+            <option th:each="a : ${authors}" th:value="${a.id}" th:text="${a.fullName}"></option>
+        </select>
+    </div>
+
+    <button type="submit">Сохранить</button>
+</form>
+
+<p><a th:href="@{/books}">Назад</a></p>
+
+</body>
+</html>

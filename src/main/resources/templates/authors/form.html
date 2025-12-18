@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Автор</title>
+</head>
+<body>
+<h1 th:text="${pageTitle}">Автор</h1>
+
+<p>
+    <a th:href="@{/authors}">← Назад к списку</a>
+</p>
+
+<form th:action="@{${formAction}}" method="post" th:object="${author}">
+    <div>
+        <label>ФИО:</label><br/>
+        <input type="text" th:field="*{fullName}" />
+        <div th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" style="color:red;"></div>
+    </div>
+
+    <div style="margin-top:10px;">
+        <label>Год рождения:</label><br/>
+        <input type="number" th:field="*{birthYear}" />
+    </div>
+
+    <div style="margin-top:10px;">
+        <button type="submit">Сохранить</button>
+    </div>
+</form>
+
+</body>
+</html>
