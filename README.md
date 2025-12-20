@@ -1,51 +1,24 @@
 # ACS PR3 — RESTful веб‑сервис (Authors & Books)
 
+**Дисциплина:** Архитектура корпоративных систем  
+
+**Команда:** FSIS (Асташин С.В и Журавлев Н.С.)
+
+**Группа:** 6133-010402D
+
+Предметная область: **Авторы и книги** (таблицы `authors` и `books`).
+
 Этот репозиторий содержит **Практическую работу №3**: REST API для модели *Authors–Books* (продолжение приложения из **ПР2**).  
 Приложение предоставляет CRUD для сущностей, поддерживает **JSON и XML**, а для XML добавлено **XSL‑преобразование**, чтобы браузер показывал XML как HTML‑страницы.  
 Также подключена документация **Swagger / OpenAPI**.
 
 ---
 
-## Содержание
-
-- [Задание 1 — JAX‑RS vs Spring REST](#задание-1--jax-rs-vs-spring-rest)
-- [Задание 2 — выбор предыдущего приложения и проектирование REST API](#задание-2--выбор-предыдущего-приложения-и-проектирование-rest-api)
-- [Функциональность (что умеет проект)](#функциональность-что-умеет-проект)
-- [REST API (эндпоинты)](#rest-api-эндпоинты)
-- [JSON и XML (как выбирать формат)](#json-и-xml-как-выбирать-формат)
-- [XSL для XML в браузере](#xsl-для-xml-в-браузере)
-- [Swagger / OpenAPI](#swagger--openapi)
-- [Запуск проекта](#запуск-проекта)
-- [Примеры запросов](#примеры-запросов)
-- [Скриншоты](#скриншоты)
-- [Как загрузить проект в GitHub (acs-pr3-rest)](#как-загрузить-проект-в-github-acs-pr3-rest)
-
----
-
 ## Задание 1 — JAX‑RS vs Spring REST
 
-### JAX‑RS (Jakarta RESTful Web Services)
-**Плюсы**
-- Стандарт спецификации (аннотации `@Path`, `@GET`, `@POST`, и т.д.), переносимость между реализациями.
-- Хорошо подходит, если проект строится вокруг Jakarta EE / MicroProfile.
+Для PR3 я мог продолжить любой из двух прошлых проектов: приложение на JakartaEE или приложение на Spring. Я сознательно выбрал продолжать Spring-проект, потому что он уже содержит полностью настроенную типовую архитектуру (data/service/web), интеграцию с БД через Spring Data JPA, Flyway-миграции, валидацию (Jakarta Validation) и удобный запуск через Spring Boot. Это позволяет сосредоточиться именно на требованиях PR3 (REST API + поддержка JSON/XML + XSLT для XML), а не тратить время на дополнительную инфраструктурную настройку и “ручную” сборку окружения, которая обычно больше требуется в JakartaEE-варианте.
 
-**Минусы (в контексте этого проекта)**
-- Обычно нужен провайдер/реализация (Jersey/RESTEasy) и доп. настройка интеграции со Spring Boot.
-- Если проект уже на Spring (ПР2), то переход на JAX‑RS добавляет лишний «слой» конфигурации.
-
-### Spring REST (Spring MVC / Spring Web)
-**Плюсы**
-- Нативно работает в Spring Boot: `@RestController`, `@RequestMapping`, `ResponseEntity`, валидация `@Valid`.
-- Проще интеграция с сервисами/репозиториями (Spring DI), транзакциями, обработкой ошибок, content negotiation.
-- Легко подключить Swagger (springdoc-openapi), Jackson для JSON и XML-маршаллинг.
-
-**Минусы**
-- Это не “стандарт API” как JAX‑RS, а фреймворк‑подход.
-
-✅ **Выбор для проекта: Spring REST (Spring MVC)**  
-**Почему:** базовый проект уже реализован на Spring Boot (ПР2), и расширение до REST в Spring даёт минимальную сложность и максимум практической пользы: меньше конфигурации, быстрее разработка, проще поддерживать JSON/XML + Swagger + XSL.
-
----
+Внутри выбранного Spring-проекта для реализации REST я выбрал Spring REST (@RestController, Spring Web), а не JAX-RS, потому что Spring REST в данном приложении даёт единый стек и минимальную сложность: те же механизмы DI, те же сервисы и репозитории, единая обработка ошибок/валидации и единая конфигурация контента (application/json, application/xml) через MessageConverters. Подключение JAX-RS внутри Spring-проекта потребовало бы отдельного JAX-RS runtime (например, Jersey/RESTEasy) и дополнительной конфигурации маршрутизации и сериализации, что усложняет проект без преимущества для требований работы. Поэтому оптимальный и наиболее “чистый” выбор для этого варианта — Spring REST.
 
 ## Задание 2 — выбор предыдущего приложения и проектирование REST API
 
@@ -142,7 +115,6 @@
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-⚠️ Если открыть `/v3/api-docs` в браузере, это **не ошибка**, а JSON‑описание спецификации.
 
 ---
 
@@ -155,18 +127,18 @@
 
 ### 1) Настройка базы данных
 Создайте БД (пример):
-- database: `acs_pr3`
-- user: `postgres`
-- password: `postgres`
+- database: `acs_pass`
+- user: `acs_user`
+- password: `acs_pass`
 
 Проверьте настройки в:
 - `src/main/resources/application.properties`
 
 Пример (проверь/подставь свои значения):
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/acs_pr3
-spring.datasource.username=postgres
-spring.datasource.password=postgres
+spring.datasource.url=jdbc:postgresql://localhost:5432/acs_pass
+spring.datasource.username=acs_user
+spring.datasource.password=acs_pass
 
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.open-in-view=false
@@ -231,62 +203,20 @@ curl.exe -X POST "http://localhost:8080/api/books" `
 
 ## Скриншоты
 
-> Вставь сюда скрины (после загрузки в репозиторий положи их в папку `docs/screens/`)
-
 ### Главная страница
-![Главная страница](docs/screens/home.png)
+![Главная страница](docs/screenshots/home.png)
 
 ### XML Authors (c XSL)
-![Authors XML](docs/screens/authors-xml.png)
+![Authors XML](docs/screenshots/authors-xml.png)
 
 ### XML Books (c XSL)
-![Books XML](docs/screens/books-xml.png)
+![Books XML](docs/screenshots/books-xml.png)
 
----
+### Swagger UI
 
-## Как загрузить проект в GitHub (acs-pr3-rest)
+![Swagger UI](docs/screenshots/swagger.png)
 
-Открой терминал **в корне проекта**.
+### Swagger UI (пример POST запроса)
 
-### 1) Инициализировать git (если ещё не инициализирован)
-```bash
-git init
-```
+![Swagger (пример запроса)](docs/screenshots/swagger-example.png)
 
-### 2) Добавить файлы и сделать коммит
-```bash
-git add .
-git commit -m "PR3: REST API + XML/XSL + Swagger"
-```
-
-### 3) Привязать удалённый репозиторий
-Если репозиторий уже создан на GitHub (например `acs-pr3-rest`):
-```bash
-git remote add origin https://github.com/fsis-acs-6133/acs-pr3-rest.git
-```
-
-Если remote уже был, можно заменить:
-```bash
-git remote set-url origin https://github.com/fsis-acs-6133/acs-pr3-rest.git
-```
-
-### 4) Запушить
-```bash
-git branch -M main
-git push -u origin main
-```
-
-### 5) Проверка
-Убедись, что:
-- есть `README.md`
-- нет мусора (`target/`, `.idea/`, `*.iml`)
-- скриншоты лежат в `docs/screens/`
-
----
-
-## Если нужны “максимальные баллы”
-Рекомендуется показать преподавателю:
-1. Swagger UI (CRUD‑запросы в браузере)
-2. XML + XSL в браузере (`?format=xml`)
-3. Что удаление автора не удаляет книги (ON DELETE SET NULL)
-4. Архитектуру слоёв (controller/service/repository)
