@@ -134,7 +134,7 @@
 Проверьте настройки в:
 - `src/main/resources/application.properties`
 
-Пример (проверь/подставь свои значения):
+Пример (подставьте свои значения):
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/acs_pass
 spring.datasource.username=acs_user
