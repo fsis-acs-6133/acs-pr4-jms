@@ -10,10 +10,12 @@ import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    // LEFT JOIN, чтобы книги без автора тоже попадали в список
     @Query("select b from Book b left join fetch b.author")
     List<Book> findAllWithAuthor();
 
     @Query("select b from Book b left join fetch b.author where b.id = :id")
     Optional<Book> findByIdWithAuthor(@Param("id") Long id);
+
+    @Query("select b from Book b left join fetch b.author where b.author.id = :authorId")
+    List<Book> findAllByAuthorIdWithAuthor(@Param("authorId") Long authorId);
 }

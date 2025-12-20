@@ -20,6 +20,11 @@ public class BookService {
         return bookRepository.findAllWithAuthor();
     }
 
+    public List<Book> findAllByAuthorIdWithAuthor(Long authorId) {
+        return bookRepository.findAllByAuthorIdWithAuthor(authorId);
+    }
+
+
     public Book getByIdWithAuthor(Long id) {
         return bookRepository.findByIdWithAuthor(id)
                 .orElseThrow(() -> new EntityNotFoundException("Книга не найдена: id=" + id));

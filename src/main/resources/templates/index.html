@@ -2,15 +2,56 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>ACS PR2</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ACS PR3 — REST API</title>
+    <style>
+        body { font-family: system-ui, Arial, sans-serif; margin: 32px; line-height: 1.5; }
+        .box { max-width: 820px; }
+        a { display: inline-block; margin: 6px 0; }
+        code { background:#f4f4f4; padding:2px 6px; border-radius:6px; }
+        .muted { color:#666; font-size: 14px; }
+        hr { margin: 18px 0; }
+    </style>
 </head>
 <body>
-<h1>ACS PR2 — Spring MVC</h1>
+<div class="box">
+    <h1>ACS PR3 — RESTful веб-сервис (Authors & Books)</h1>
+    <div class="muted">
+        Главная страница для проверки: UI (PR2) + REST (PR3) + XML/XSL + Swagger.
+    </div>
 
-<ul>
-    <li><a th:href="@{/authors}">Авторы</a></li>
-    <li><a th:href="@{/books}">Книги</a></li>
-</ul>
+    <hr>
 
+    <h2>PR2 — Spring MVC страницы</h2>
+    <ul>
+        <li><a th:href="@{/authors}">Авторы (MVC)</a></li>
+        <li><a th:href="@{/books}">Книги (MVC)</a></li>
+    </ul>
+
+    <h2>PR3 — Swagger / OpenAPI</h2>
+    <ul>
+        <li><a th:href="@{/swagger-ui/index.html}">Swagger UI</a></li>
+        <li><a th:href="@{/v3/api-docs}">OpenAPI JSON</a></li>
+    </ul>
+
+    <h2>PR3 — XML (c XSL для браузера)</h2>
+    <ul>
+        <li><a th:href="@{/api/authors(format=xml)}">/api/authors?format=xml</a></li>
+        <li><a th:href="@{/api/books(format=xml)}">/api/books?format=xml</a></li>
+    </ul>
+
+    <h2>PR3 — JSON REST (для Swagger/Postman)</h2>
+    <ul>
+        <li><a th:href="@{/api/authors}">GET /api/authors</a></li>
+        <li><a th:href="@{/api/books}">GET /api/books</a></li>
+    </ul>
+
+    <hr>
+
+    <div class="muted">
+        Подсказка: создание/обновление/удаление удобнее делать прямо в <a th:href="@{/swagger-ui/index.html}">Swagger UI</a>.
+        В браузере XML-страницы красиво отображаются из-за подключённого XSL.
+    </div>
+</div>
 </body>
 </html>
