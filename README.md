@@ -1,4 +1,4 @@
-# ACS PR3 — RESTful веб‑сервис (Authors & Books)
+# ACS PR4 — Java Message Service
 
 **Дисциплина:** Архитектура корпоративных систем  
 
