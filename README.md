@@ -6,136 +6,125 @@
 
 **Группа:** 6133-010402D
 
-Предметная область: **Авторы и книги** (таблицы `authors` и `books`).
 
-Этот репозиторий содержит **Практическую работу №3**: REST API для модели *Authors–Books* (продолжение приложения из **ПР2**).  
-Приложение предоставляет CRUD для сущностей, поддерживает **JSON и XML**, а для XML добавлено **XSL‑преобразование**, чтобы браузер показывал XML как HTML‑страницы.  
-Также подключена документация **Swagger / OpenAPI**.
+Практическая работа №4: добавлен механизм журналирования изменений (audit_log) и система оповещений по email через JMS.
 
----
-
-## Задание 1 — JAX‑RS vs Spring REST
-
-Для PR3 я мог продолжить любой из двух прошлых проектов: приложение на JakartaEE или приложение на Spring. Я сознательно выбрал продолжать Spring-проект, потому что он уже содержит полностью настроенную типовую архитектуру (data/service/web), интеграцию с БД через Spring Data JPA, Flyway-миграции, валидацию (Jakarta Validation) и удобный запуск через Spring Boot. Это позволяет сосредоточиться именно на требованиях PR3 (REST API + поддержка JSON/XML + XSLT для XML), а не тратить время на дополнительную инфраструктурную настройку и “ручную” сборку окружения, которая обычно больше требуется в JakartaEE-варианте.
-
-Внутри выбранного Spring-проекта для реализации REST я выбрал Spring REST (@RestController, Spring Web), а не JAX-RS, потому что Spring REST в данном приложении даёт единый стек и минимальную сложность: те же механизмы DI, те же сервисы и репозитории, единая обработка ошибок/валидации и единая конфигурация контента (application/json, application/xml) через MessageConverters. Подключение JAX-RS внутри Spring-проекта потребовало бы отдельного JAX-RS runtime (например, Jersey/RESTEasy) и дополнительной конфигурации маршрутизации и сериализации, что усложняет проект без преимущества для требований работы. Поэтому оптимальный и наиболее “чистый” выбор для этого варианта — Spring REST.
-
-## Задание 2 — выбор предыдущего приложения и проектирование REST API
-
-В качестве базы выбрано приложение из **Практической работы №2**:
-
-- **Author**: `id`, `fullName`, `birthYear`
-- **Book**: `id`, `title`, `publishedYear`, `authorId`
-
-На его основе спроектировано REST API, которое предоставляет операции:
-- Получение списков и отдельных объектов
-- Создание
-- Обновление
-- Удаление
-
-Дополнительно:
-- `GET /api/authors/{id}/books` — книги конкретного автора.
+## Стек
+- Java 17
+- Spring Boot
+- Spring Data JPA + Hibernate
+- Flyway
+- PostgreSQL
+- JMS: ActiveMQ Artemis
+- Email: MailHog (SMTP)
+- Swagger/OpenAPI
 
 ---
 
-## Функциональность (что умеет проект)
+## 1) Предварительные требования
 
-### PR2 (MVC страницы)
-- `/authors` — список/создание/редактирование/удаление авторов
-- `/books` — список/создание/редактирование/удаление книг
-
-### PR3 (REST)
-- REST CRUD для Authors и Books
-- JSON и XML на вход/выход
-- XSL преобразование: при запросе XML добавляется `<?xml-stylesheet ...?>`, чтобы браузер отображал как HTML
-- Swagger UI для удобной работы с API через браузер
-
-### Важная особенность (удаление автора)
-Книги **не удаляются**, даже если удаляется автор.  
-При удалении автора в таблице `books` поле `author_id` становится `NULL` (**ON DELETE SET NULL**).  
-Это позволяет сохранять записи о книгах.
+### Установить/иметь:
+- Java 17
+- Maven
+- PostgreSQL (локально)
+- (опционально) Docker — если запускаете Artemis/MailHog через Docker
 
 ---
 
-## REST API (эндпоинты)
+## 2) Настройка базы данных
 
-### Authors
-- `GET  /api/authors` — список авторов  
-- `GET  /api/authors/{id}` — автор по id  
-- `POST /api/authors` — создать автора  
-- `PUT  /api/authors/{id}` — обновить автора  
-- `DELETE /api/authors/{id}` — удалить автора  
-- `GET /api/authors/{id}/books` — книги автора  
+Создайте БД и пользователя (пример):
+```sql
+CREATE DATABASE acs_pass;
+CREATE USER acs_user WITH PASSWORD 'acs_pass';
+GRANT ALL PRIVILEGES ON DATABASE acs_pass TO acs_user;
+````
 
-### Books
-- `GET  /api/books` — список книг  
-- `GET  /api/books/{id}` — книга по id  
-- `POST /api/books` — создать книгу  
-- `PUT  /api/books/{id}` — обновить книгу  
-- `DELETE /api/books/{id}` — удалить книгу  
+В `application.properties` должны быть корректные данные подключения:
 
----
-
-## JSON и XML (как выбирать формат)
-
-Проект поддерживает **оба формата**.
-
-### 1) Через query‑параметр (удобно для браузера)
-- `?format=xml` → отдаётся XML (и добавляется XSL PI для красивого HTML в браузере)
-
-Пример:
-- `http://localhost:8080/api/authors?format=xml`
-- `http://localhost:8080/api/books?format=xml`
-
-### 2) Через заголовок Accept (для Postman/curl/клиентов)
-- `Accept: application/json`
-- `Accept: application/xml`
-
----
-
-## XSL для XML в браузере
-
-Чтобы браузер показывал XML как HTML:
-1. XSL-файлы лежат в статике:
-   - `src/main/resources/static/xsl/authors.xsl`
-   - `src/main/resources/static/xsl/author.xsl`
-   - `src/main/resources/static/xsl/books.xsl`
-   - `src/main/resources/static/xsl/book.xsl`
-2. При XML‑ответе сервис добавляет в начало:
-   - `<?xml-stylesheet type="text/xsl" href="/xsl/....xsl"?>`
-
-Можно просто открыть в браузере:
-- `http://localhost:8080/api/authors?format=xml`
-- `http://localhost:8080/api/books?format=xml`
-
----
-
-## Swagger / OpenAPI
-
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-
-
----
-
-## Запуск проекта
-
-### Требования
-- **Java 17+** (или та версия, которая указана в проекте)
-- **Maven 3.9+** (или используйте `mvnw`)
-- **PostgreSQL** (локально или в Docker)
-
-### 1) Настройка базы данных
-Создайте БД (пример):
-- database: `acs_pass`
-- user: `acs_user`
-- password: `acs_pass`
-
-Проверьте настройки в:
-- `src/main/resources/application.properties`
-
-Пример (подставьте свои значения):
 ```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/acs_pass
+spring.datasource.username=acs_user
+spring.datasource.password=acs_pass
+```
+
+Flyway при запуске сам создаст таблицы, включая `audit_log`.
+
+---
+
+## 3) Запуск ActiveMQ Artemis и MailHog
+
+### Вариант A (рекомендуется): запуск через Docker (как у меня)
+
+#### 3.1 Запуск Artemis
+
+```bash
+docker run -d --name artemis \
+  -p 61616:61616 -p 8161:8161 \
+  -e ARTEMIS_USER=admin -e ARTEMIS_PASSWORD=admin \
+  apache/activemq-artemis:2.41.0-alpine
+```
+
+Панель Artemis: [http://localhost:8161](http://localhost:8161)
+Логин/пароль: `admin / admin`
+
+#### 3.2 Запуск MailHog
+
+```bash
+docker run -d --name mailhog \
+  -p 1025:1025 -p 8025:8025 \
+  mailhog/mailhog
+```
+
+Панель MailHog: [http://localhost:8025](http://localhost:8025)
+
+---
+
+### Вариант B: запуск без Docker (локально)
+
+#### 3.1 ActiveMQ Artemis без Docker
+
+1. Скачайте ActiveMQ Artemis с официального сайта (дистрибутив).
+2. Создайте брокер:
+
+```bash
+./artemis create mybroker
+```
+
+3. Запустите:
+
+```bash
+cd mybroker/bin
+./artemis run
+```
+
+4. Убедитесь, что порты:
+
+* 61616 (JMS)
+* 8161 (web console)
+
+#### 3.2 MailHog без Docker
+
+1. Скачайте MailHog (бинарник под вашу ОС) из релизов.
+2. Запуск:
+
+```bash
+MailHog
+```
+
+3. Порты по умолчанию:
+
+* SMTP: 1025
+* Web UI: 8025
+
+---
+
+## 4) Настройки приложения
+
+Пример `src/main/resources/application.properties` (ключевые параметры):
+
+```properties
+# DB
 spring.datasource.url=jdbc:postgresql://localhost:5432/acs_pass
 spring.datasource.username=acs_user
 spring.datasource.password=acs_pass
@@ -144,79 +133,145 @@ spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.open-in-view=false
 
 spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+
+# JMS (Artemis)
+spring.artemis.mode=native
+spring.artemis.broker-url=tcp://localhost:61616
+spring.artemis.user=admin
+spring.artemis.password=admin
+
+app.jms.audit-queue=audit.queue
+app.jms.notify-queue=notify.queue
+
+# Email (MailHog)
+spring.mail.host=localhost
+spring.mail.port=1025
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+
+app.notify.enabled=true
+app.notify.from=acs-pr4@localhost
+app.notify.to=test1@local.test,test2@local.test
+app.notify.subject-prefix=[ACS-PR4]
 ```
 
-### 2) Запуск
-Из корня проекта:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Или собрать jar:
-```bash
-./mvnw clean package
-java -jar target/*.jar
-```
-
-После запуска:
-- Главная страница: `http://localhost:8080/`
-- MVC: `/authors`, `/books`
-- REST: `/api/...`
-- Swagger: `/swagger-ui.html`
+> Важно: если приложение запускается НЕ внутри docker-сети (обычно так и есть), то `spring.mail.host=localhost`.
+> Если бы приложение было контейнером внутри compose-сети — тогда было бы `mailhog`.
 
 ---
 
-## Примеры запросов
+## 5) Запуск приложения
 
-### PowerShell (важно!)
-В PowerShell `curl` часто является алиасом `Invoke-WebRequest`, поэтому команды в стиле Linux могут «ломаться».
+В корне проекта:
 
-**Вариант A (рекомендуется): `curl.exe`**
-```powershell
-curl.exe -X POST "http://localhost:8080/api/authors" `
-  -H "Content-Type: application/json" `
-  -H "Accept: application/json" `
-  -d "{\"fullName\":\"Лев Толстой\",\"birthYear\":1828}"
+```bash
+mvn clean spring-boot:run
 ```
 
-**Вариант B: Invoke-RestMethod**
-```powershell
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/authors" `
-  -Headers @{ "Content-Type"="application/json"; "Accept"="application/json" } `
-  -Body '{ "fullName":"Лев Толстой", "birthYear":1828 }'
-```
+Swagger UI:
 
-### Создать книгу (JSON)
-```powershell
-curl.exe -X POST "http://localhost:8080/api/books" `
-  -H "Content-Type: application/json" `
-  -H "Accept: application/json" `
-  -d "{\"title\":\"Война и мир\",\"publishedYear\":1869,\"authorId\":1}"
-```
-
-### Получить XML (для браузера)
-- `http://localhost:8080/api/authors?format=xml`
-- `http://localhost:8080/api/books?format=xml`
+* [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 ---
 
-## Скриншоты
+## 6) Проверка работоспособности лабораторной (пошагово)
 
-### Главная страница
-![Главная страница](docs/screenshots/home.png)
+### 6.1 Проверка CRUD и генерации событий
 
-### XML Authors (c XSL)
-![Authors XML](docs/screenshots/authors-xml.png)
+Через Swagger или curl:
 
-### XML Books (c XSL)
-![Books XML](docs/screenshots/books-xml.png)
+#### INSERT (создание автора)
 
-### Swagger UI
+* POST `/api/authors`
 
-![Swagger UI](docs/screenshots/swagger.png)
+```json
+{
+  "fullName": "Иван Иванов",
+  "birthYear": 1990
+}
+```
 
-### Swagger UI (пример POST запроса)
+Ожидаем:
 
-![Swagger (пример запроса)](docs/screenshots/swagger-example.png)
+* сообщение улетело в JMS очереди `audit.queue` и `notify.queue`
+* запись появилась в `audit_log`
+* письмо появилось в MailHog
+
+#### UPDATE
+
+* PUT `/api/authors/{id}`
+
+```json
+{
+  "fullName": "Иван Иванович",
+  "birthYear": 1991
+}
+```
+
+Ожидаем то же самое.
+
+#### DELETE
+
+* DELETE `/api/authors/{id}`
+  Ожидаем то же самое.
+
+---
+
+### 6.2 Проверка таблицы audit_log (PostgreSQL)
+
+Пример запроса:
+
+```sql
+SELECT id, occurred_at, action, entity_type, entity_id, summary, before_data, after_data
+FROM audit_log
+ORDER BY occurred_at DESC;
+```
+
+В таблице должны появляться строки после INSERT/UPDATE/DELETE.
+
+* Скриншот 1: таблица `audit_log` с несколькими событиями (INSERT/UPDATE/DELETE)
+
+![Скриншот 1: таблица `audit_log` с несколькими событиями (INSERT/UPDATE/DELETE)](docs/screenshots/audit-log.png)
+
+---
+
+### 6.3 Проверка Artemis (сообщения в очередях)
+
+Открыть Artemis Console: [http://localhost:8161](http://localhost:8161)
+Вкладка `Queues`:
+
+* `audit.queue`
+* `notify.queue`
+
+Должно быть видно увеличение счетчиков сообщений / доставку.
+
+
+* Скриншот 2: Artemis → Queues, видно что сообщения добавляются в `audit.queue` и `notify.queue`
+
+![Скриншот 2: Artemis → Queues, видно что сообщения добавляются в `audit.queue` и `notify.queue`](docs/screenshots/artemis.png)
+
+
+---
+
+### 6.4 Проверка MailHog (письма)
+
+Открыть MailHog UI: [http://localhost:8025](http://localhost:8025)
+
+Должны появляться письма при любом изменении (INSERT/UPDATE/DELETE).
+
+
+* Скриншот 3: MailHog Inbox, видно пришедшее письмо
+
+![Скриншот 3: MailHog Inbox, видно пришедшее письмо](docs/screenshots/mailhog.png)
+
+
+---
+
+## 7) Полезные ссылки
+
+* Swagger: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+* Artemis Console: [http://localhost:8161](http://localhost:8161)
+* MailHog UI: [http://localhost:8025](http://localhost:8025)
+
 

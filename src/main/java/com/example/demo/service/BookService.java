@@ -1,13 +1,19 @@
 package com.example.demo.service;
 
+import com.example.demo.jms.ChangeType;
+import com.example.demo.jms.EntityChangeMessage;
+import com.example.demo.jms.EntityChangePublisher;
 import com.example.demo.model.Book;
 import com.example.demo.repository.BookRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +21,11 @@ import java.util.List;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final EntityChangePublisher changePublisher;
+
+    public List<Book> findAll() {
+        return bookRepository.findAll();
+    }
 
     public List<Book> findAllWithAuthor() {
         return bookRepository.findAllWithAuthor();
@@ -24,32 +35,84 @@ public class BookService {
         return bookRepository.findAllByAuthorIdWithAuthor(authorId);
     }
 
+    public Book getById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Книга не найдена: id=" + id));
+    }
 
     public Book getByIdWithAuthor(Long id) {
         return bookRepository.findByIdWithAuthor(id)
-                .orElseThrow(() -> new EntityNotFoundException("Книга не найдена: id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("Книга не найдена: id=" + id));
     }
 
     @Transactional
     public Book create(Book book) {
-        book.setId(null);
-        return bookRepository.save(book);
+        Book saved = bookRepository.save(book);
+
+        EntityChangeMessage event = new EntityChangeMessage(
+                UUID.randomUUID().toString(),
+                Instant.now(),
+                ChangeType.INSERT,
+                "Book",
+                saved.getId(),
+                null,
+                snapshot(saved)
+        );
+        changePublisher.publishAfterCommit(event);
+
+        return saved;
     }
 
     @Transactional
-    public Book update(Long id, Book updated) {
-        Book existing = bookRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Книга не найдена: id=" + id));
+    public Book update(Long id, Book patch) {
+        Book existing = getById(id);
+        Map<String, Object> before = snapshot(existing);
 
-        existing.setTitle(updated.getTitle());
-        existing.setPublishedYear(updated.getPublishedYear());
-        existing.setAuthor(updated.getAuthor()); // может быть null
+        existing.setTitle(patch.getTitle());
+        existing.setPublishedYear(patch.getPublishedYear());
+        existing.setAuthor(patch.getAuthor()); // допускается null, если author_id nullable
 
-        return existing;
+        Book saved = bookRepository.save(existing);
+
+        EntityChangeMessage event = new EntityChangeMessage(
+                UUID.randomUUID().toString(),
+                Instant.now(),
+                ChangeType.UPDATE,
+                "Book",
+                saved.getId(),
+                before,
+                snapshot(saved)
+        );
+        changePublisher.publishAfterCommit(event);
+
+        return saved;
     }
 
     @Transactional
     public void delete(Long id) {
-        bookRepository.deleteById(id);
+        Book existing = getById(id);
+        Map<String, Object> before = snapshot(existing);
+
+        bookRepository.delete(existing);
+
+        EntityChangeMessage event = new EntityChangeMessage(
+                UUID.randomUUID().toString(),
+                Instant.now(),
+                ChangeType.DELETE,
+                "Book",
+                id,
+                before,
+                null
+        );
+        changePublisher.publishAfterCommit(event);
+    }
+
+    private Map<String, Object> snapshot(Book b) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", b.getId());
+        m.put("title", b.getTitle());
+        m.put("publishedYear", b.getPublishedYear());
+        m.put("authorId", b.getAuthor() != null ? b.getAuthor().getId() : null);
+        return m;
     }
 }
