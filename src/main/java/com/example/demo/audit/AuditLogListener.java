@@ -15,7 +15,10 @@ public class AuditLogListener {
     private final EntityChangeMessageParser parser;
 
     @Transactional
-    @JmsListener(destination = "${app.jms.audit-queue}")
+    @JmsListener(
+            destination = "${app.jms.change-topic}",
+            containerFactory = "topicListenerFactory"
+    )
     public void onMessage(String json) {
         EntityChangeMessage msg = parser.fromJson(json);
 

@@ -17,7 +17,10 @@ public class NotifyEmailListener {
     private final EmailService emailService;
     private final EntityChangeMessageParser parser;
 
-    @JmsListener(destination = "${app.jms.notify-queue}")
+    @JmsListener(
+            destination = "${app.jms.change-topic}",
+            containerFactory = "topicListenerFactory"
+    )
     public void onMessage(String json) {
         log.info("NOTIFY LISTENER GOT: {}", json);
 
@@ -29,6 +32,7 @@ public class NotifyEmailListener {
         try {
             EntityChangeMessage msg = parser.fromJson(json);
 
+            // Письма после ЛЮБЫХ изменений
             String subject = "%s %s (id=%s)".formatted(
                     msg.getEntityType(),
                     msg.getAction(),
@@ -64,7 +68,7 @@ public class NotifyEmailListener {
 
         } catch (Exception e) {
             log.error("Notify listener failed", e);
-            throw e; // чтобы при ошибке JMS не “съел” сообщение молча
+            throw e; // чтобы JMS не “съел” сообщение молча
         }
     }
 }

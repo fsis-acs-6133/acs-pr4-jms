@@ -8,6 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "app.jms")
 public class AppJmsProperties {
-    private String auditQueue;
-    private String notifyQueue;
+
+    /**
+     * JMS Topic для публикации событий изменений.
+     * Пример: entity.change.topic
+     */
+    private String changeTopic;
 }

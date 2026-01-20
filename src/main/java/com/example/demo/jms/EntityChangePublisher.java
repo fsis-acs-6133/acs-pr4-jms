@@ -11,7 +11,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class EntityChangePublisher {
 
-    private final JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate; // теперь он pub/sub (Topic) из JmsConfig
     private final AppJmsProperties props;
     private final EntityChangeMessageParser parser;
 
@@ -31,8 +31,8 @@ public class EntityChangePublisher {
     private void send(EntityChangeMessage event) {
         String json = parser.toJson(event);
 
-        // ДВА очереди => и аудит, и уведомления получат одинаковое событие
-        jmsTemplate.convertAndSend(props.getAuditQueue(), json);
-        jmsTemplate.convertAndSend(props.getNotifyQueue(), json);
+        // Одно событие публикуем в Topic
+        // Аудит и уведомления получат его через подписки (pub/sub)
+        jmsTemplate.convertAndSend(props.getChangeTopic(), json);
     }
 }
